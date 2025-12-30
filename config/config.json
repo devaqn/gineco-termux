@@ -1,0 +1,28 @@
+{
+  "gemini": {
+    "apiKey": "SUA_API_KEY_AQUI",
+    "model": "gemini-1.5-flash",
+    "temperature": 0.7,
+    "maxTokens": 1024
+  },
+  "security": {
+    "enableEncryption": true,
+    "enablePIN": false,
+    "pinHash": "",
+    "sessionTimeout": 1800000
+  },
+  "bot": {
+    "botName": "Gina",
+    "language": "pt-BR",
+    "timezone": "Sao_Paulo"
+  },
+  "features": {
+    "allowExport": true,
+    "allowDelete": true,
+    "maxRecordsPerDay": 50
+  },
+  "notifications": {
+    "enabled": false,
+    "reminderTime": "20:00"
+  }
+}

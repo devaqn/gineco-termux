@@ -1,0 +1,44 @@
+{
+  "name": "gyneco-bot",
+  "version": "1.0.0",
+  "description": "Bot WhatsApp de saúde ginecológica educativa com IA Gemini - Rodando 24/7 no Termux",
+  "main": "src/index.js",
+  "scripts": {
+    "start": "node src/index.js",
+    "dev": "node src/index.js",
+    "test": "echo \"Sem testes configurados ainda\" && exit 0"
+  },
+  "keywords": [
+    "whatsapp",
+    "bot",
+    "gemini",
+    "health",
+    "gynecology",
+    "termux",
+    "android",
+    "ai",
+    "nodejs"
+  ],
+  "author": "Projeto Gyneco Bot",
+  "license": "MIT",
+  "dependencies": {
+    "@whiskeysockets/baileys": "^6.7.9",
+    "@google/generative-ai": "^0.21.0",
+    "qrcode-terminal": "^0.12.0",
+    "pino": "^9.4.0",
+    "node-cache": "^5.1.2",
+    "bcryptjs": "^2.4.3",
+    "crypto-js": "^4.2.0"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/seu-usuario/gyneco-bot"
+  },
+  "bugs": {
+    "url": "https://github.com/seu-usuario/gyneco-bot/issues"
+  },
+  "homepage": "https://github.com/seu-usuario/gyneco-bot#readme"
+}
