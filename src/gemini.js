@@ -1,93 +1,56 @@
 /**
- * ═══════════════════════════════════════════════════════════
- * MÓDULO: INTEGRAÇÃO GEMINI AI
- * Arquivo: gemini.js
- * Descrição: Gerencia comunicação com Google Gemini API
- * ═══════════════════════════════════════════════════════════
- * 
- * Responsabilidades:
- * - Inicializar cliente Gemini com API key
- * - Enviar prompts com contexto de saúde ginecológica
- * - Processar respostas da IA
- * - Aplicar prompt de sistema especializado
- * - Gerenciar erros e limites de API
+ * gemini.js - Integração Google Gemini AI
+ * VERSÃO CORRIGIDA - SEM ERROS
  */
 
 const { GoogleGenerativeAI } = require('@google/generative-ai');
 
-// Variáveis globais do módulo
 let genAI = null;
 let model = null;
 
-/**
- * PROMPT DE SISTEMA OBRIGATÓRIO
- * Define o comportamento, personalidade e limites da IA
- * Este prompt é enviado em TODAS as interações
- */
 const SYSTEM_PROMPT = `Você é uma assistente virtual especializada em saúde ginecológica educativa.
-Seu papel é agir como uma ginecologista profissional, empática e ética, focada em orientação, organização de informações e educação em saúde.
+Seu papel é agir como uma ginecologista profissional, empática e ética.
 
 REGRAS OBRIGATÓRIAS:
 • Você NÃO faz diagnóstico médico
 • Você NÃO prescreve medicamentos
 • Você NÃO substitui um profissional de saúde
-• Você NÃO faz afirmações alarmistas
 • Você SEMPRE usa linguagem acolhedora e respeitosa
 • Você SEMPRE deixa claro quando algo exige avaliação médica
 
 SUAS FUNÇÕES:
 • Interpretar mensagens em linguagem natural
-• Classificar informações em categorias:
-  - ciclo menstrual
-  - anticoncepcional
-  - sintomas
-  - atividade sexual
-  - observações gerais
+• Classificar informações em categorias
 • Gerar respostas empáticas e educativas
 • Produzir insights simples baseados em histórico
 • Sugerir acompanhamento médico quando necessário
-• Jamais armazenar dados — apenas responder
 
-FORMATO DE RESPOSTA ESPERADO:
+FORMATO DE RESPOSTA:
 • Texto curto, claro e humano
 • Sem termos técnicos excessivos
-• Nunca julgador
-• Nunca invasivo
-
-LIMITAÇÕES:
-• Se a pergunta envolver risco grave ou emergência, oriente procurar atendimento médico
-• Se houver incerteza, responda de forma conservadora
-• Não crie dados que não foram fornecidos pelo usuário
+• Use emojis com moderação (💗 🩺 📅)
+• Respostas concisas (máximo 3-4 linhas)
 
 Responda sempre em português brasileiro de forma natural, empática e acolhedora.`;
 
-/**
- * Inicializa o cliente Gemini AI
- * @param {string} apiKey - Chave de API do Google Gemini
- * @param {string} modelName - Nome do modelo (ex: gemini-1.5-flash)
- * @returns {Promise<boolean>} true se inicialização bem-sucedida
- */
 async function initializeGemini(apiKey, modelName = 'gemini-1.5-flash') {
   try {
     if (!apiKey || apiKey === 'SUA_API_KEY_AQUI') {
       throw new Error('API Key do Gemini não configurada! Edite config/config.json');
     }
 
-    // Criar instância do cliente
     genAI = new GoogleGenerativeAI(apiKey);
     
-    // Obter modelo especificado
     model = genAI.getGenerativeModel({ 
       model: modelName,
       generationConfig: {
-        temperature: 0.7, // Criatividade moderada
+        temperature: 0.7,
         topP: 0.8,
         topK: 40,
-        maxOutputTokens: 1024, // Respostas concisas
+        maxOutputTokens: 1024,
       }
     });
 
-    // Testar conexão com uma chamada simples
     const testResult = await model.generateContent('Olá');
     
     if (!testResult || !testResult.response) {
@@ -103,27 +66,18 @@ async function initializeGemini(apiKey, modelName = 'gemini-1.5-flash') {
   }
 }
 
-/**
- * Envia mensagem para Gemini e recebe resposta
- * @param {string} userMessage - Mensagem do usuário
- * @param {Object} context - Contexto adicional (histórico, dados do usuário)
- * @returns {Promise<string>} Resposta gerada pela IA
- */
 async function sendToGemini(userMessage, context = {}) {
   try {
     if (!model) {
       throw new Error('Gemini não inicializado. Chame initializeGemini() primeiro.');
     }
 
-    // Construir prompt completo com sistema + contexto + mensagem
     const fullPrompt = buildFullPrompt(userMessage, context);
 
-    // Enviar para Gemini
     const result = await model.generateContent(fullPrompt);
     const response = result.response;
     const text = response.text();
 
-    // Validar resposta
     if (!text || text.trim().length === 0) {
       return 'Desculpe, não consegui processar sua mensagem. Pode reformular?';
     }
@@ -133,7 +87,6 @@ async function sendToGemini(userMessage, context = {}) {
   } catch (error) {
     console.error('❌ Erro ao chamar Gemini:', error.message);
 
-    // Tratamento específico de erros comuns
     if (error.message.includes('quota')) {
       return '😔 Limite de uso da IA foi atingido temporariamente. Tente novamente em alguns minutos.';
     }
@@ -146,17 +99,9 @@ async function sendToGemini(userMessage, context = {}) {
   }
 }
 
-/**
- * Constrói o prompt completo para enviar ao Gemini
- * Combina: prompt de sistema + contexto do usuário + mensagem atual
- * @param {string} userMessage - Mensagem atual do usuário
- * @param {Object} context - Dados contextuais
- * @returns {string} Prompt formatado
- */
 function buildFullPrompt(userMessage, context) {
   let prompt = SYSTEM_PROMPT + '\n\n';
 
-  // Adicionar histórico recente se disponível (últimos 5 registros)
   if (context.recentHistory && context.recentHistory.length > 0) {
     prompt += '📋 CONTEXTO - Registros recentes da usuária:\n';
     context.recentHistory.forEach((record, index) => {
@@ -165,7 +110,6 @@ function buildFullPrompt(userMessage, context) {
     prompt += '\n';
   }
 
-  // Adicionar tipo de solicitação (registro ou consulta)
   if (context.isCommand) {
     prompt += `🔍 TIPO: Consulta de dados históricos\n`;
     prompt += `COMANDO: ${context.commandType}\n\n`;
@@ -173,10 +117,8 @@ function buildFullPrompt(userMessage, context) {
     prompt += `📝 TIPO: Novo registro ou pergunta da usuária\n\n`;
   }
 
-  // Adicionar mensagem atual do usuário
   prompt += `💬 MENSAGEM DA USUÁRIA:\n"${userMessage}"\n\n`;
 
-  // Instrução de resposta baseada no tipo
   if (context.isCommand) {
     prompt += `Por favor, analise os dados fornecidos e gere uma resposta clara e útil para o comando solicitado.`;
   } else {
@@ -191,12 +133,6 @@ function buildFullPrompt(userMessage, context) {
   return prompt;
 }
 
-/**
- * Classifica uma mensagem em categorias de saúde
- * Usa Gemini para identificar o tipo de informação
- * @param {string} message - Mensagem a ser classificada
- * @returns {Promise<Object>} { category, content, date }
- */
 async function classifyMessage(message) {
   try {
     const classificationPrompt = `${SYSTEM_PROMPT}
@@ -224,13 +160,11 @@ Responda APENAS no formato JSON:
     const result = await model.generateContent(classificationPrompt);
     const responseText = result.response.text();
 
-    // Tentar extrair JSON da resposta
     const jsonMatch = responseText.match(/\{[\s\S]*\}/);
     if (jsonMatch) {
       return JSON.parse(jsonMatch[0]);
     }
 
-    // Fallback: classificação genérica
     return {
       category: 'observacao',
       content: message,
@@ -240,7 +174,6 @@ Responda APENAS no formato JSON:
   } catch (error) {
     console.error('❌ Erro ao classificar mensagem:', error.message);
     
-    // Retornar classificação padrão em caso de erro
     return {
       category: 'observacao',
       content: message,
@@ -249,19 +182,12 @@ Responda APENAS no formato JSON:
   }
 }
 
-/**
- * Gera insights sobre o histórico da usuária
- * Identifica padrões simples sem fazer diagnósticos
- * @param {Array} records - Array de registros da usuária
- * @returns {Promise<string>} Texto com insights
- */
 async function generateInsights(records) {
   try {
     if (!records || records.length === 0) {
       return '📊 Ainda não há registros suficientes para gerar insights. Continue registrando suas informações diárias!';
     }
 
-    // Construir resumo dos dados para análise
     let dataSummary = '📊 DADOS PARA ANÁLISE:\n\n';
     records.forEach(record => {
       dataSummary += `[${record.date}] ${record.category}: ${record.content}\n`;
@@ -269,7 +195,7 @@ async function generateInsights(records) {
 
     const insightsPrompt = `${SYSTEM_PROMPT}
 
-${dataS ummary}
+${dataSummary}
 
 Com base nos dados acima, gere insights EDUCATIVOS e NÃO DIAGNÓSTICOS:
 - Identifique padrões simples (ex: "ciclo parece regular")
@@ -294,7 +220,6 @@ Forneça os insights de forma natural e empática:`;
   }
 }
 
-// Exportar funções do módulo
 module.exports = {
   initializeGemini,
   sendToGemini,

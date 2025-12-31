@@ -1,6 +1,6 @@
 {
   "gemini": {
-    "apiKey": "SUA_API_KEY_AQUI",
+    "apiKey": "AIzaSyDL_Nz7BszjGeJG4VeV9YJUdZUOvWnT7FI",
     "model": "gemini-1.5-flash",
     "temperature": 0.7,
     "maxTokens": 1024
