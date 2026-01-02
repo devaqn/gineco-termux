@@ -1,48 +1,44 @@
-/**
- * gemini.js - Integração Google Gemini AI
- * VERSÃO CORRIGIDA - SEM ERROS
- */
-
 const { GoogleGenerativeAI } = require('@google/generative-ai');
 
 let genAI = null;
 let model = null;
 
 const SYSTEM_PROMPT = `Você é uma assistente virtual especializada em saúde ginecológica educativa.
-Seu papel é agir como uma ginecologista profissional, empática e ética.
 
 REGRAS OBRIGATÓRIAS:
-• Você NÃO faz diagnóstico médico
-• Você NÃO prescreve medicamentos
-• Você NÃO substitui um profissional de saúde
-• Você SEMPRE usa linguagem acolhedora e respeitosa
-• Você SEMPRE deixa claro quando algo exige avaliação médica
+- Você NÃO faz diagnóstico médico
+- Você NÃO prescreve medicamentos
+- Você SEMPRE usa linguagem acolhedora
+- Use emojis com moderação (💗 🩺 📅)
+- Respostas concisas (máximo 3-4 linhas)
 
-SUAS FUNÇÕES:
-• Interpretar mensagens em linguagem natural
-• Classificar informações em categorias
-• Gerar respostas empáticas e educativas
-• Produzir insights simples baseados em histórico
-• Sugerir acompanhamento médico quando necessário
+Responda sempre em português brasileiro de forma empática e educativa.`;
 
-FORMATO DE RESPOSTA:
-• Texto curto, claro e humano
-• Sem termos técnicos excessivos
-• Use emojis com moderação (💗 🩺 📅)
-• Respostas concisas (máximo 3-4 linhas)
-
-Responda sempre em português brasileiro de forma natural, empática e acolhedora.`;
-
-async function initializeGemini(apiKey, modelName = 'gemini-1.5-flash') {
+async function initializeGemini(apiKey, modelName = 'gemini-1.5-flash-002') {
   try {
     if (!apiKey || apiKey === 'SUA_API_KEY_AQUI') {
-      throw new Error('API Key do Gemini não configurada! Edite config/config.json');
+      throw new Error('API Key do Gemini não configurada!');
     }
+
+    console.log('   Conectando com Google Gemini...');
 
     genAI = new GoogleGenerativeAI(apiKey);
     
+    // Listar modelos disponíveis
+    console.log('   Verificando modelos disponíveis...');
+    const response = await fetch(`https://generativelanguage.googleapis.com/v1/models?key=${apiKey}`);
+    const data = await response.json();
+    
+    if (!data.models || data.models.length === 0) {
+      throw new Error('Nenhum modelo disponível para esta API Key');
+    }
+    
+    // Usar o primeiro modelo disponível
+    const availableModel = data.models[0].name.replace('models/', '');
+    console.log(`   Modelo disponível: ${availableModel}`);
+    
     model = genAI.getGenerativeModel({ 
-      model: modelName,
+      model: availableModel,
       generationConfig: {
         temperature: 0.7,
         topP: 0.8,
@@ -51,17 +47,20 @@ async function initializeGemini(apiKey, modelName = 'gemini-1.5-flash') {
       }
     });
 
+    console.log('   Testando conexão...');
     const testResult = await model.generateContent('Olá');
+    const testText = testResult.response.text();
     
-    if (!testResult || !testResult.response) {
-      throw new Error('Falha ao conectar com Gemini API');
+    if (!testText) {
+      throw new Error('API retornou resposta vazia');
     }
 
-    console.log(`   Modelo: ${modelName}`);
+    console.log('   ✅ Gemini conectado com sucesso!');
     return true;
 
   } catch (error) {
-    console.error('❌ Erro ao inicializar Gemini:', error.message);
+    console.error('❌ Erro ao inicializar Gemini:');
+    console.error('   Mensagem:', error.message);
     throw error;
   }
 }
@@ -69,32 +68,21 @@ async function initializeGemini(apiKey, modelName = 'gemini-1.5-flash') {
 async function sendToGemini(userMessage, context = {}) {
   try {
     if (!model) {
-      throw new Error('Gemini não inicializado. Chame initializeGemini() primeiro.');
+      throw new Error('Gemini não inicializado');
     }
 
     const fullPrompt = buildFullPrompt(userMessage, context);
-
     const result = await model.generateContent(fullPrompt);
-    const response = result.response;
-    const text = response.text();
+    const text = result.response.text();
 
     if (!text || text.trim().length === 0) {
-      return 'Desculpe, não consegui processar sua mensagem. Pode reformular?';
+      return 'Desculpe, não consegui processar sua mensagem.';
     }
 
     return text.trim();
 
   } catch (error) {
     console.error('❌ Erro ao chamar Gemini:', error.message);
-
-    if (error.message.includes('quota')) {
-      return '😔 Limite de uso da IA foi atingido temporariamente. Tente novamente em alguns minutos.';
-    }
-    
-    if (error.message.includes('API key')) {
-      return '❌ Erro de configuração da IA. Contate o administrador do bot.';
-    }
-
     return 'Desculpe, tive um problema técnico. Tente novamente.';
   }
 }
@@ -103,32 +91,15 @@ function buildFullPrompt(userMessage, context) {
   let prompt = SYSTEM_PROMPT + '\n\n';
 
   if (context.recentHistory && context.recentHistory.length > 0) {
-    prompt += '📋 CONTEXTO - Registros recentes da usuária:\n';
+    prompt += '📋 Registros recentes:\n';
     context.recentHistory.forEach((record, index) => {
-      prompt += `${index + 1}. [${record.date}] ${record.category}: ${record.content}\n`;
+      prompt += `${index + 1}. [${record.date}] ${record.content}\n`;
     });
     prompt += '\n';
   }
 
-  if (context.isCommand) {
-    prompt += `🔍 TIPO: Consulta de dados históricos\n`;
-    prompt += `COMANDO: ${context.commandType}\n\n`;
-  } else {
-    prompt += `📝 TIPO: Novo registro ou pergunta da usuária\n\n`;
-  }
-
-  prompt += `💬 MENSAGEM DA USUÁRIA:\n"${userMessage}"\n\n`;
-
-  if (context.isCommand) {
-    prompt += `Por favor, analise os dados fornecidos e gere uma resposta clara e útil para o comando solicitado.`;
-  } else {
-    prompt += `Por favor:
-1. Identifique se é um registro de informação ou uma pergunta
-2. Se for registro: confirme o registro de forma empática
-3. Se for pergunta: responda de forma educativa e acolhedora
-4. Use emojis com moderação (💗 🩺 📅)
-5. Mantenha resposta concisa (máximo 3-4 linhas)`;
-  }
+  prompt += `💬 MENSAGEM: "${userMessage}"\n\n`;
+  prompt += `Responda empaticamente (3-4 linhas).`;
 
   return prompt;
 }
@@ -137,30 +108,19 @@ async function classifyMessage(message) {
   try {
     const classificationPrompt = `${SYSTEM_PROMPT}
 
-Classifique a seguinte mensagem em UMA das categorias:
-- menstruacao (início/fim do ciclo, fluxo, duração)
-- anticoncepcional (horário, esquecimento, início/pausa)
-- sintomas (cólicas, dores, TPM, alterações físicas/emocionais)
-- sexual (atividade sexual, uso de preservativo)
-- observacao (outros registros de saúde)
+Classifique: "${message}"
 
-Extraia também:
-- A data mencionada (hoje, ontem, data específica)
-- O conteúdo principal da informação
+Categorias: menstruacao, anticoncepcional, sintomas, sexual, observacao
 
-Mensagem: "${message}"
-
-Responda APENAS no formato JSON:
-{
-  "category": "categoria_identificada",
-  "content": "resumo_da_informacao",
-  "date": "YYYY-MM-DD ou 'today' ou 'yesterday'"
-}`;
+Responda APENAS em JSON (sem markdown):
+{"category":"categoria","content":"resumo","date":"today"}`;
 
     const result = await model.generateContent(classificationPrompt);
     const responseText = result.response.text();
 
-    const jsonMatch = responseText.match(/\{[\s\S]*\}/);
+    const cleanText = responseText.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim();
+    
+    const jsonMatch = cleanText.match(/\{[\s\S]*\}/);
     if (jsonMatch) {
       return JSON.parse(jsonMatch[0]);
     }
@@ -172,8 +132,6 @@ Responda APENAS no formato JSON:
     };
 
   } catch (error) {
-    console.error('❌ Erro ao classificar mensagem:', error.message);
-    
     return {
       category: 'observacao',
       content: message,
@@ -185,38 +143,25 @@ Responda APENAS no formato JSON:
 async function generateInsights(records) {
   try {
     if (!records || records.length === 0) {
-      return '📊 Ainda não há registros suficientes para gerar insights. Continue registrando suas informações diárias!';
+      return '📊 Ainda não há registros suficientes.';
     }
 
-    let dataSummary = '📊 DADOS PARA ANÁLISE:\n\n';
-    records.forEach(record => {
-      dataSummary += `[${record.date}] ${record.category}: ${record.content}\n`;
+    let dataSummary = '📊 DADOS:\n\n';
+    records.slice(0, 20).forEach(record => {
+      dataSummary += `[${record.date}] ${record.content}\n`;
     });
 
     const insightsPrompt = `${SYSTEM_PROMPT}
 
 ${dataSummary}
 
-Com base nos dados acima, gere insights EDUCATIVOS e NÃO DIAGNÓSTICOS:
-- Identifique padrões simples (ex: "ciclo parece regular")
-- Estime duração média do ciclo (se houver dados)
-- Note sintomas recorrentes
-- Sugira acompanhamento médico se necessário
-
-IMPORTANTE:
-- NÃO faça diagnósticos
-- NÃO seja alarmista
-- Seja acolhedora e informativa
-- Máximo 5-6 linhas
-
-Forneça os insights de forma natural e empática:`;
+Gere insights educativos (NÃO diagnósticos). Máximo 5-6 linhas.`;
 
     const result = await model.generateContent(insightsPrompt);
     return result.response.text().trim();
 
   } catch (error) {
-    console.error('❌ Erro ao gerar insights:', error.message);
-    return '😔 Não foi possível gerar insights no momento. Tente novamente mais tarde.';
+    return '😔 Não foi possível gerar insights.';
   }
 }
 
@@ -224,6 +169,5 @@ module.exports = {
   initializeGemini,
   sendToGemini,
   classifyMessage,
-  generateInsights,
-  SYSTEM_PROMPT
+  generateInsights
 };

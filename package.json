@@ -22,13 +22,13 @@
   "author": "Projeto Gyneco Bot",
   "license": "MIT",
   "dependencies": {
+    "@google/generative-ai": "^0.24.1",
     "@whiskeysockets/baileys": "^6.7.9",
-    "@google/generative-ai": "^0.21.0",
-    "qrcode-terminal": "^0.12.0",
-    "pino": "^9.4.0",
-    "node-cache": "^5.1.2",
     "bcryptjs": "^2.4.3",
-    "crypto-js": "^4.2.0"
+    "crypto-js": "^4.2.0",
+    "node-cache": "^5.1.2",
+    "pino": "^9.4.0",
+    "qrcode-terminal": "^0.12.0"
   },
   "engines": {
     "node": ">=18.0.0"

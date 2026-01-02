@@ -1,28 +1,12 @@
 {
   "gemini": {
-    "apiKey": "AIzaSyDL_Nz7BszjGeJG4VeV9YJUdZUOvWnT7FI",
-    "model": "gemini-1.5-flash",
-    "temperature": 0.7,
-    "maxTokens": 1024
+    "apiKey": "AIzaSyCFFQpzovYmEDIplhLmhioJ1J0NWHXNTCY",
+    "model": "gemini-1.5-flash-002"
   },
   "security": {
-    "enableEncryption": true,
-    "enablePIN": false,
-    "pinHash": "",
-    "sessionTimeout": 1800000
+    "enableEncryption": true
   },
   "bot": {
-    "botName": "Gina",
-    "language": "pt-BR",
-    "timezone": "Sao_Paulo"
-  },
-  "features": {
-    "allowExport": true,
-    "allowDelete": true,
-    "maxRecordsPerDay": 50
-  },
-  "notifications": {
-    "enabled": false,
-    "reminderTime": "20:00"
+    "botName": "Gina"
   }
 }
